@@ -1,6 +1,9 @@
 import pandas as pd
 import whois
 import time
+from openpyxl import load_workbook
+from openpyxl.styles import PatternFill
+from openpyxl.utils.dataframe import dataframe_to_rows
 
 def check_domain_availability(domain_name):
     try:
@@ -36,15 +39,33 @@ def main():
         if domain:
             status = check_domain_availability(domain)
             results.append({
-                "Domain": domain,
-                "Availability Status": status
+                "domain": domain,
+                "availability_status": status
             })
-            time.sleep(1)  # polite delay
+            time.sleep(1)
 
-    # Save results to Excel
+    # Create DataFrame and write to Excel
     output_df = pd.DataFrame(results)
-    output_df.to_excel("domain_results.xlsx", index=False)
-    print("\n✅ Results exported to 'domain_results.xlsx'")
+    output_path = "domain_results_colored.xlsx"
+    output_df.to_excel(output_path, index=False)
+
+    # Apply color formatting
+    wb = load_workbook(output_path)
+    ws = wb.active
+
+    green_fill = PatternFill(start_color="C6EFCE", end_color="C6EFCE", fill_type="solid")  # Light green
+    red_fill = PatternFill(start_color="FFC7CE", end_color="FFC7CE", fill_type="solid")    # Light red
+
+    for row in ws.iter_rows(min_row=2, min_col=2, max_col=2):  # availability_status column
+        cell = row[0]
+        value = cell.value.lower()
+        if "taken" in value:
+            cell.fill = red_fill
+        elif "available" in value:
+            cell.fill = green_fill
+
+    wb.save(output_path)
+    print(f"\n✅ Colored Excel saved as '{output_path}'")
 
 if __name__ == "__main__":
     main()
